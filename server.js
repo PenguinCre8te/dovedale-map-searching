@@ -17,11 +17,11 @@ app.get('/status', (req, res) => {
 });
 
 app.ws('/ws', (ws, req) => {
-	console.log('WebSocket client connected');
+	//console.log('WebSocket client connected');
 	webhooks.push(ws);
 
 	ws.on('close', () => {
-		console.log('WebSocket client disconnected');
+		//console.log('WebSocket client disconnected');
 		// Remove from webhooks array on disconnect
 		const index = webhooks.indexOf(ws);
 		if (index > -1) {
@@ -33,7 +33,7 @@ app.ws('/ws', (ws, req) => {
 app.post('/positions', (req, res) => {
 	const data = req.body;
 
-	console.log('Received data from Roblox:', data);
+	//console.log('Received data from Roblox:', data);
 
 	if (!data.token || data.token !== ROBLOX_SECRET) {
 		return res.status(401).send('Unauthorized: Invalid key');
