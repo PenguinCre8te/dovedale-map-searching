@@ -14,7 +14,7 @@ bun dev
 ```
 
 ## Production
-
+The [website](https://map.dovedale.wiki) will be automatically updated and restarted when commits are pushed to `main`.
 ```
 bun install
 bun install pm2 -g
