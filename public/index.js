@@ -693,6 +693,13 @@ const updateServerList = (data = null) => {
 
 // Rendering
 const drawScene = () => {
+	// Clear entire canvas in screen space
+	context.save();
+	context.setTransform(1, 0, 0, 1, 0, 0); // reset transform
+	context.clearRect(0, 0, canvas.width, canvas.height);
+	context.restore();
+
+	// Keep your existing clearRect logic if you want
 	const transformedP1 = context.transformedPoint(0, 0);
 	const transformedP2 = context.transformedPoint(canvas.width, canvas.height);
 	context.clearRect(
@@ -701,6 +708,7 @@ const drawScene = () => {
 		transformedP2.x - transformedP1.x,
 		transformedP2.y - transformedP1.y,
 	);
+
 
 	const mapAspectRatio = MAP_CONFIG.totalWidth / MAP_CONFIG.totalHeight;
 	const canvasAspectRatio = canvas.width / canvas.height;
@@ -809,6 +817,31 @@ const drawScene = () => {
 		context.fillStyle = "#fff";
 		context.fillText(name, pos.x - textWidth / 2, boxY + padY + ascent);
 	});
+	if (state.highlightTarget) {
+		if (state.highlightTarget.type === "player") {
+			const player = state.getAllPlayers().find(
+			p => (p.username ?? "").toLowerCase() === state.highlightTarget.name.toLowerCase()
+			);
+			if (player) {
+				const pos = worldToCanvas(player.position?.x ?? 0, player.position?.y ?? 0);
+				context.strokeStyle = "yellow";
+				context.lineWidth = 2;
+				context.beginPath();
+				context.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
+				context.stroke();
+			}
+		} else if (state.highlightTarget.type === "station") {
+			const coords = AREA_MARKERS[state.highlightTarget.name];
+			if (coords) {
+				const pos = worldToCanvas(coords.x, coords.y);
+				context.strokeStyle = "yellow";
+				context.lineWidth = 2;
+				context.beginPath();
+				context.arc(pos.x, pos.y, 10, 0, Math.PI * 2);
+				context.stroke();
+			}
+		}
+	}
 };
 
 // Map Loading
@@ -976,6 +1009,66 @@ const handleTouchEvents = () => {
 		}
 	});
 };
+
+// --- Search & Focus Section ---
+
+const searchBox = document.getElementById("searchBox");
+const searchHints = document.getElementById("searchHints");
+
+// Constant zoom level when focusing on a search result
+const FOCUS_SCALE = 3; // adjust to taste
+
+
+function showHints(matches) {
+  if (!matches.length) {
+    searchHints.innerHTML = "";
+    searchHints.classList.add("hidden");
+    return;
+  }
+
+  	searchHints.innerHTML = matches.map(m => `
+    <li class="px-2 py-1 hover:bg-zinc-700 cursor-pointer" 
+        data-type="${m.type}" data-name="${m.name}">
+      ${m.type === "player" ? "👤" : "📍"} ${m.name}
+    </li>
+  	`).join("");
+  	searchHints.classList.remove("hidden");
+
+	searchHints.querySelectorAll("li").forEach(li => {
+		li.addEventListener("click", () => {
+	const type = li.dataset.type;
+	const name = li.dataset.name;
+
+	state.highlightTarget = { type, name }; // set highlight
+	drawScene(); // redraw with highlight
+
+	searchHints.classList.add("hidden");
+	searchBox.value = name;
+	});
+  });
+}
+
+searchBox.addEventListener("input", () => {
+  const query = searchBox.value.trim().toLowerCase();
+  if (!query) {
+    searchHints.classList.add("hidden");
+    return;
+  }
+
+  const playerMatches = state.getAllPlayers()
+	.filter(p => {
+		const uname = (p.username ?? "").toLowerCase();
+		const dname = (p.displayName ?? "").toLowerCase();
+		return uname.includes(query) || dname.includes(query);
+	})
+	.map(p => ({ type: "player", name: p.username }));
+
+  const stationMatches = Object.keys(AREA_MARKERS)
+    .filter(name => name.toLowerCase().includes(query))
+    .map(name => ({ type: "station", name }));
+
+  showHints([...playerMatches, ...stationMatches].slice(0, 10));
+});
 
 // Event Listeners
 elements.serverSelect.addEventListener("change", () => {
