@@ -1010,14 +1010,11 @@ const handleTouchEvents = () => {
 	});
 };
 
-// --- Search & Focus Section ---
+
+// Searching
 
 const searchBox = document.getElementById("searchBox");
 const searchHints = document.getElementById("searchHints");
-
-// Constant zoom level when focusing on a search result
-const FOCUS_SCALE = 3; // adjust to taste
-
 
 function showHints(matches) {
   if (!matches.length) {
